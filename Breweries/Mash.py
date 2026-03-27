@@ -5,7 +5,7 @@
 
 #----------------------------------------------------------------------------
 # Created By  : Nick Santucci
-# Created Date: February 14 2022 
+# Created Date: February 14 2022
 # version ='0.1.0'
 # ---------------------------------------------------------------------------
 
@@ -23,39 +23,39 @@ from GlobalVariables import NewStateEnum, NewStatusEnum, UtilizationList, Utiliz
 class Mash:
 
     """
-    The Mash Tun is a brewhouse vessel used for mixing the ground malt (grist) with temperature-controlled water. 
-    This is called “mashing” and the porridge-like result is called the “mash.” The mash is held at a predetermined 
-    temperature and time (e.g., at 65°C for 1 h) until the malt starches convert to sugars, and the dissolved malt 
-    sugars (wort) are rinsed into the kettle where hops are added. The mash tun is a single vessel where the mashing 
+    The Mash Tun is a brewhouse vessel used for mixing the ground malt (grist) with temperature-controlled water.
+    This is called “mashing” and the porridge-like result is called the “mash.” The mash is held at a predetermined
+    temperature and time (e.g., at 65°C for 1 h) until the malt starches convert to sugars, and the dissolved malt
+    sugars (wort) are rinsed into the kettle where hops are added. The mash tun is a single vessel where the mashing
     and wort runoff take place in the same vessel.
 
-    Operational sequence steps: 
-    
-    1) The MashTun begins in the Ready/Idle state 
+    Operational sequence steps:
+
+    1) The MashTun begins in the Ready/Idle state
     2) Automatically transitions to Running(from MaltMill Asset going to Running)/Filling where water is added to the MashTun vessel
     3) Once the Water fill setpoint is reached it moves to Running/RampingUp where steam is used to heat up the temperature
     4) Once the Temperature PV (actual temperature) reaches Temperature Setpoint it moves to Running/Holding1 to soak and agitate
-    5) Once the HoldTime Setpoint is reached it moves to Running/RampUp2 where steam is used to heat up the temperature further 
+    5) Once the HoldTime Setpoint is reached it moves to Running/RampUp2 where steam is used to heat up the temperature further
     6) Once the Temperature PV (actual temperature) reaches Temperature Setpoint it moves to Running/Holding2 to soak and agitate
-    7) Once the HoldTime Setpoint is reached it moves to Running/Draining if the BoilKettle is in Ready/Idle, else stays in Holding2 
-    8) After Draining is completed, it moves to Done/Draining, then back to Ready/Idle (Step 1) for next production run   
+    7) Once the HoldTime Setpoint is reached it moves to Running/Draining if the BoilKettle is in Ready/Idle, else stays in Holding2
+    8) After Draining is completed, it moves to Done/Draining, then back to Ready/Idle (Step 1) for next production run
 
     Equipment Utilization (Availability component of OEE):
 
-    Is dependent on the MalMill asset, please see MaltMill.py for more details. 
+    Is dependent on the MalMill asset, please see MaltMill.py for more details.
 
     Dependencies (Asset material transfers & data handshaking)
     ----------
 
-    Upstream - Soft dependency on the Roaster (100/200), if no production(s) from the Roaster exists, it will randomly generate a consumption 
+    Upstream - Soft dependency on the Roaster (100/200), if no production(s) from the Roaster exists, it will randomly generate a consumption
                item and from lot, otherwise it will randomly pull from an existing list of consumption items from the Roaster (100/200)
-    Downstream - The BoilKettle must be in Ready/Idle for the MashTun to be able to Drain, else it will Hold.    
+    Downstream - The BoilKettle must be in Ready/Idle for the MashTun to be able to Drain, else it will Hold.
 
     Attributes (exposed to OPC UA Client)
-    ----------    
+    ----------
 
     MaltPV (Malt Process Variable Actual)
-    MaltSP (Malt Setpoint Desired)        
+    MaltSP (Malt Setpoint Desired)
     NewState (Machine State - "Done", "Ready", "Running", "Paused" (Downtime), "Aborted")
     Agitator.AuxContact (The Agitator motors auxiliary contact state - True/False)
     Agitator.PV (The Agitator motors actual state - Started/Stopped)
@@ -101,7 +101,7 @@ class Mash:
 
     Methods
     -------
-    
+
     __init__(self, EquipmentName) - Class Constructor
     Run(self) - method to simulate equipment data
 
@@ -109,15 +109,15 @@ class Mash:
 
     # Class Constructor
     def __init__(self, EquipmentName):
-        self.EquipmentName = EquipmentName 
+        self.EquipmentName = EquipmentName
         self.NewState = NewStateEnum.Done
         self.NewStatus = NewStatusEnum.Idle
         self.UtilizationState = "Runtime"
-        self.Utilization = "Running (Normal)"        
+        self.Utilization = "Running (Normal)"
         self.ShipComplete = False
-        self.MaltMillComplete = False        
+        self.MaltMillComplete = False
         self.BrewKettleReady = False
-        self.ReadyOS = False        
+        self.ReadyOS = False
         self.MashComplete = False
         self.ScanTime = 100
         self.WaterSP = 0
@@ -130,7 +130,7 @@ class Mash:
         self.TemperatureSP = 0
         self.TemperaturePV = 0.0
         self.LevelPV = 0.0
-        self.Scrap = 0.0        
+        self.Scrap = 0.0
         self.newScrap = 0.0
         self.ProductionID = ""
         self.MaterialID = ""
@@ -144,16 +144,16 @@ class Mash:
         self.ProductNames = ['Red','Pale','Dark','Green']
 
         # Create contained assets
-        self.HoldTime = Timer("HoldTime")        
+        self.HoldTime = Timer("HoldTime")
         self.TemperatureControl = pidLoop("TemperatureControl", 0.1, 0.25, 1.0, 5.0, 1.0)
         self.WaterValve = Valve("WaterValve")
         self.SteamValve = Valve("SteamValve")
         self.OutletValve = Valve("OutletValve")
         self.Agitator = Motor("Agitator")
-        self.OutletPump = Motor("OutletPump")        
+        self.OutletPump = Motor("OutletPump")
 
-    # Run method to simulate equipment data 
-    def Run(self):        
+    # Run method to simulate equipment data
+    def Run(self):
 
         match self.NewState:
 
@@ -173,7 +173,7 @@ class Mash:
                 self.SteamValve.CmdOpen = False
                 self.OutletPump.CmdStart = False
                 self.OutletValve.CmdOpen = False
-                self.HoldTime.Enabled = False                
+                self.HoldTime.Enabled = False
 
             case NewStateEnum.Paused:
                 self.Agitator.CmdStart = False
@@ -181,11 +181,11 @@ class Mash:
                 self.OutletValve.CmdOpen = False
                 self.SteamValve.CmdOpen = False
                 self.WaterValve.CmdOpen = False
-                self.HoldTime.Enabled = False                
+                self.HoldTime.Enabled = False
 
                 if (self.WaterPV > 100) and (self.Scrap < self.WaterPV):
                     self.newScrap = self.WaterPV * 0.00001
-                    self.Scrap = round(self.Scrap + self.newScrap, 2)                 
+                    self.Scrap = round(self.Scrap + self.newScrap, 2)
 
             case NewStateEnum.Ready:
                 self.NewStatus = NewStatusEnum.Idle
@@ -211,20 +211,20 @@ class Mash:
                     self.Cons_Malt_FromLot = ""
                     self.Prod_Wort_ToLot = ""
                     self.Prod_Wort_Item = ""
-                    self.Scrap_ToLot = ""                    
+                    self.Scrap_ToLot = ""
                     self.HoldTime.RST = True
                     self.MaltMillComplete = False
                     self.MashComplete = False
-                    self.ShipComplete = False                    
-                    
-                    # Randomize measurements for next Production Run
-                    self.WaterSP = randint(2500,3500)  
-                    self.SoakTempSP1 = randint(120,141)
-                    self.SoakTempSP2 = randint(150,201) 
-                    self.SoakTimeSP1 = randint(5,12) * 60    
-                    self.SoakTimeSP2 = randint(7,14) * 60 
+                    self.ShipComplete = False
 
-                    self.HoldTime.PT = self.SoakTimeSP1  
+                    # Randomize measurements for next Production Run
+                    self.WaterSP = randint(2500,3500)
+                    self.SoakTempSP1 = randint(120,141)
+                    self.SoakTempSP2 = randint(150,201)
+                    self.SoakTimeSP1 = randint(5,12) * 60
+                    self.SoakTimeSP2 = randint(7,14) * 60
+
+                    self.HoldTime.PT = self.SoakTimeSP1
 
                     if (len(self.ConsList) > 0):
                         roasterProdDict = choice(self.ConsList)
@@ -235,13 +235,13 @@ class Mash:
                     else:
                         uniquePre = choice(self.ProductNames)
                         self.Cons_Malt_Item = "{0}{1}".format(uniquePre," Malt")
-                        self.Cons_Malt_FromLot = "{0}{1}".format("RBB-", str(randint(1,10000)).zfill(5))                               
+                        self.Cons_Malt_FromLot = "{0}{1}".format("RBB-", str(randint(1,10000)).zfill(5))
 
-                    #uniquePre = choice(self.ProductNames)                  
+                    #uniquePre = choice(self.ProductNames)
                     fullMatID = "{0}{1}".format(uniquePre," Ale")
                     self.Wort_Item = fullMatID
                     self.MaterialID = "{0}{1}".format("Wort ", fullMatID)
-                    self.Prod_Wort_Item = self.MaterialID                                                            
+                    self.Prod_Wort_Item = self.MaterialID
 
                     now = datetime.datetime.now()
                     self.ProductionID = "{0}{1}{2}".format("PR-A", self.EquipmentName[-3], now.strftime("%m%d%S%M"))
@@ -249,7 +249,7 @@ class Mash:
                     lotNo = "{0}{1}{2}".format("GW-", self.EquipmentName[-3], now.strftime("%d%M%S%m"))
                     self.Prod_Wort_ToLot = lotNo
                     self.Scrap_ToLot = lotNo
-                        
+
             case NewStateEnum.Running:
 
                 match self.NewStatus:
@@ -280,7 +280,7 @@ class Mash:
 
                     case NewStatusEnum.RampingUp1:
                         # Ramp up the temperature
-                        self.Agitator.CmdStart = True 
+                        self.Agitator.CmdStart = True
                         self.SteamValve.CmdOpen = True
 
                         if (self.TemperaturePV >= self.TemperatureSP):
@@ -317,7 +317,7 @@ class Mash:
                             self.HoldTime.RST = False
 
                     case NewStatusEnum.Holding2:
-                        self.HoldTime.Enabled = True                        
+                        self.HoldTime.Enabled = True
 
                         if (self.HoldTime.DN and self.BrewKettleReady):
                             self.HoldTime.Enabled = False
@@ -343,11 +343,11 @@ class Mash:
                         else:
                             self.OutletValve.CmdOpen = False
                             self.OutletPump.CmdStart = False
-                            self.ShipComplete = True 
+                            self.ShipComplete = True
                             self.WaterValve.CmdOpen = False
 
                             # Because of the interaction between Malt and Mash, this entity only sets a bit for completion
-                            self.MashComplete = True                
+                            self.MashComplete = True
 
         if (self.NewState != NewStateEnum.Paused) and (self.SteamValve.CmdOpen) and (self.WaterValve.CmdOpen == False) and (self.TemperaturePV >= 90.0):
             self.TemperaturePV = round(self.TemperaturePV - 0.93 * 0.001, 2)
@@ -361,17 +361,17 @@ class Mash:
         if (self.TemperatureControl.Enabled):
             self.TemperaturePV = round(self.TemperatureControl.Run(self.TemperatureSP, self.TemperaturePV), 2)
 
-        # Create level from volume - the Mash Tun is assumed to be 12' in diameter and 7' tall. 
-        # This is a 5,900 GAL tank. Level will be normalized 0-100% as: Level = Water.PV / 5900 * 100 
+        # Create level from volume - the Mash Tun is assumed to be 12' in diameter and 7' tall.
+        # This is a 5,900 GAL tank. Level will be normalized 0-100% as: Level = Water.PV / 5900 * 100
         self.LevelPV = round(self.WaterPV / 5900 * 100.0, 2)
 
         self.TemperatureControl.MassOffset = 1.0 - (self.WaterPV / 5900.0)
-        self.TemperatureControl.PVincreaseMultiplier = 0.25   
+        self.TemperatureControl.PVincreaseMultiplier = 0.25
 
         # Run contained objects
-        self.HoldTime.Run()        
+        self.HoldTime.Run()
         self.WaterValve.Run()
         self.SteamValve.Run()
         self.OutletValve.Run()
         self.Agitator.Run()
-        self.OutletPump.Run()  
+        self.OutletPump.Run()

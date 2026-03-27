@@ -5,7 +5,7 @@
 
 #----------------------------------------------------------------------------
 # Created By  : Nick Santucci
-# Created Date: February 14 2022 
+# Created Date: February 14 2022
 # version ='0.1.0'
 # ---------------------------------------------------------------------------
 
@@ -21,39 +21,39 @@ from Valve import Valve
 from pidLoop import pidLoop
 from GlobalVariables import NewStateEnum, NewStatusEnum, UtilizationList, UtilizationStateList
 
-class BrightTank:    
+class BrightTank:
 
     """
-    A Bright Tank is a dish-bottomed pressure-rated temperature-controlled tank used to hold beer in preparation for packaging. 
-    The term “bright” refers to “bright beer,” beer that has been rendered bright (clear) by filtration, centrifugation, fining, 
+    A Bright Tank is a dish-bottomed pressure-rated temperature-controlled tank used to hold beer in preparation for packaging.
+    The term “bright” refers to “bright beer,” beer that has been rendered bright (clear) by filtration, centrifugation, fining,
     and/or maturation.
 
-    Operational sequence steps: 
-    
-    1) The Bright Tank begins in the Ready/Idle state 
+    Operational sequence steps:
+
+    1) The Bright Tank begins in the Ready/Idle state
     2) When the Fermenter Allocates a Bright Tank (this asset) it will transition to Running/Draining status and the Bright Tank will transition to Running/Filling
     3) Once the Fermenter Draining is completed, the Boil Kettle moves to Running/Holding
     4) Once the HoldTime Setpoint is reached it moves to Running/Draining if the BottleLine (401-403) is in Ready/Idle, else stays in Holding
-    5) After Running/Draining is completed, the Bright Tank moves to Done/Draining, then back to Ready/Idle (Step 1) for next production run   
+    5) After Running/Draining is completed, the Bright Tank moves to Done/Draining, then back to Ready/Idle (Step 1) for next production run
 
     Equipment Utilization (Availability component of OEE):
 
     In parallel to the above Operational sequence steps, every one minute the BrightTank checks to see if it should go into a "Downtime" state.
     By default the BrightTank is set to have 99% uptime (self.PerformanceTargetPercent).  If it is determined (randomly) that
-    the BrightTank should go to a Downtime state, the machine is set to Running/Paused and a Utilization State is set to a random value of 
+    the BrightTank should go to a Downtime state, the machine is set to Running/Paused and a Utilization State is set to a random value of
     ('Demand','Downtime','Maintenance') and Utilization is set to a random value of ('No Orders','Starved Supply','Running (Slow)',
     'Unknown','EStop','Sticking Valve','Pump Overload','Faulty Wiring','Tripped Breaker','Planned Maintenance',
     'Unplanned Maintenance') for a randomly selected amount of time (97-600 seconds).  Once the downtime is complete all states go
-    back to runtime. 
+    back to runtime.
 
     Dependencies (Asset material transfers & data handshaking)
     ----------
 
     Upstream - The Bright Tank (this asset) needs to be in Ready/Idle for Fermenter to Allocate then Drain
-    Downstream - The BottleLine (401-403) must be in Ready/Idle for the Bright Tank (301-305) to Allocate and be able to Drain    
+    Downstream - The BottleLine (401-403) must be in Ready/Idle for the Bright Tank (301-305) to Allocate and be able to Drain
 
     Attributes (exposed to OPC UA Client)
-    ----------    
+    ----------
 
     AllocatedFrom (The Fermenter (100-200) that allocated this Bright Tank)
     ChillWaterValve.CLS (The ChillWaterValve is Closed Limit Switch)
@@ -90,7 +90,7 @@ class BrightTank:
 
     Methods
     -------
-    
+
     __init__(self, EquipmentName) - Class Constructor
     Run(self) - method to simulate equipment data
 
@@ -99,7 +99,7 @@ class BrightTank:
     # Class Constructor
     def __init__(self, EquipmentName):
 
-        self.EquipmentName = EquipmentName 
+        self.EquipmentName = EquipmentName
         self.StartCmd = False
         self.StopCmd = False
         self.RestartCmd = False
@@ -108,9 +108,9 @@ class BrightTank:
         self.AbortCmd = False
         self.ShipToShipCmd = False
         self.ShipToAllocated = False
-        self.ShipToAutoAllocateCmd = False        
+        self.ShipToAutoAllocateCmd = False
         self.FermenterShipComplete = False
-        self.ShipToShipComplete = False        
+        self.ShipToShipComplete = False
         self.ReadyOS = False
         self.ShipToTank = -1
         self.AllocatedFrom = -1
@@ -155,8 +155,8 @@ class BrightTank:
         # Set timer for 1 minute to check for random downtime event
         self.CheckDownTime.PT = 60
 
-    # Run method to simulate equipment data 
-    def Run(self):        
+    # Run method to simulate equipment data
+    def Run(self):
 
         if self.StartCmd:
             self.StartCmd = False
@@ -170,8 +170,8 @@ class BrightTank:
                 self.DownStream_ProductionID = self.ProductionID
 
                 now = datetime.datetime.now()
-                self.Prod_Beer_ToLot = "{0}{1}{2}".format("MB-", self.EquipmentName[-3], now.strftime("%m%d%S%M"))             
-                
+                self.Prod_Beer_ToLot = "{0}{1}{2}".format("MB-", self.EquipmentName[-3], now.strftime("%m%d%S%M"))
+
                 self.NewState = NewStateEnum.Running
 
         if self.RestartCmd:
@@ -184,12 +184,12 @@ class BrightTank:
             if self.NewState == NewStateEnum.Running:
                 self.NewState = NewStateEnum.Paused
 
-        if self.EStopCmd:        
+        if self.EStopCmd:
             if self.NewState == NewStateEnum.Running:
                 self.NewState = NewStateEnum.Paused
 
-        if self.ResetCmd:    
-            self.ResetCmd = False    
+        if self.ResetCmd:
+            self.ResetCmd = False
             if self.NewState == NewStateEnum.Done or self.NewState == NewStateEnum.Aborted:
                 self.NewState = NewStateEnum.Ready
                 self.NewStatus = NewStatusEnum.Idle
@@ -214,53 +214,53 @@ class BrightTank:
                 self.ShipToAutoAllocateCmd = False
                 self.InletValve.CmdOpen = False
                 self.OutletValve.CmdOpen = False
-                self.OutletPump.CmdStart = False                
+                self.OutletPump.CmdStart = False
 
-            case NewStateEnum.Done:                  
+            case NewStateEnum.Done:
                 self.InletValve.CmdOpen = False
                 self.OutletValve.CmdOpen = False
-                self.OutletPump.CmdStart = False                               
+                self.OutletPump.CmdStart = False
                 self.ChillWaterValve.CmdOpen = False
-                self.HoldTime.Enabled = False                 
-                self.BeerShippedFromFermenter = 0.0  
+                self.HoldTime.Enabled = False
+                self.BeerShippedFromFermenter = 0.0
                 self.BeerPV = 0.0
                 self.ShipToAllocated = False
                 self.ShipToShipCmd = False
                 self.ShipToShipComplete = False
                 self.HoldTime.RST = True
-                self.BeerSP = 5000.0 
+                self.BeerSP = 5000.0
                 self.TemperatureSP = 70
                 self.TemperaturePV = 70.0
-                self.LevelPV = 0.0                
+                self.LevelPV = 0.0
                 self.HoldTime.RST = True
                 self.BeerShipped = 0.0
-                self.ShipToTank = -1 
-                self.AllocatedFrom = -1    
+                self.ShipToTank = -1
+                self.AllocatedFrom = -1
                 self.ProductionID = ""
                 self.MaterialID = ""
                 self.Prod_Beer_Item = ""
                 self.Prod_Beer_ToLot = ""
                 self.Cons_GreenBeer_Item = ""
-                self.Cons_GreenBeer_FromLot = ""                         
+                self.Cons_GreenBeer_FromLot = ""
 
                 self.SettleTime.RST = False
-                self.SettleTime.Enabled = True                
+                self.SettleTime.Enabled = True
                 if (self.SettleTime.DN):
 
                     self.SettleTime.Enabled = False
                     self.SettleTime.RST = True
-                       
+
                     self.SettleTime.PT = randint(5,10)
-                    self.HoldTime.PT = randint(7,13) * 60                    
+                    self.HoldTime.PT = randint(7,13) * 60
 
-                    self.NewState = NewStateEnum.Ready                    
+                    self.NewState = NewStateEnum.Ready
 
-            case NewStateEnum.Paused:                
-                self.CheckDownTime.Enabled = False                
+            case NewStateEnum.Paused:
+                self.CheckDownTime.Enabled = False
                 self.InletValve.CmdOpen = False
                 self.OutletPump.CmdStart = False
                 self.OutletValve.CmdOpen = False
-                self.HoldTime.Enabled = False                
+                self.HoldTime.Enabled = False
 
                 self.DownTime.Enabled = True
                 if (self.DownTime.DN):
@@ -270,18 +270,18 @@ class BrightTank:
                     self.DownTime.RST = True
 
             case NewStateEnum.Ready:
-                self.ScanDelta = 1.2                              
+                self.ScanDelta = 1.2
 
             case NewStateEnum.Running:
 
                 match self.NewStatus:
 
                     case NewStatusEnum.Allocated:
-                        self.ReadyOS = False                        
+                        self.ReadyOS = False
                         self.NewStatus = NewStatusEnum.Filling
 
                     case NewStatusEnum.Filling:
-                        
+
                         if (not self.FermenterShipComplete):
                             self.InletValve.CmdOpen = True
                             self.BeerPV = round(self.BeerShippedFromFermenter, 2)
@@ -289,8 +289,8 @@ class BrightTank:
                         else:
                             self.BeerPV = round(self.BeerShippedFromFermenter, 2)
                             self.BeerSP = self.BeerPV
-                            self.InletValve.CmdOpen = False                            
-                            self.HoldTime.RST = False                            
+                            self.InletValve.CmdOpen = False
+                            self.HoldTime.RST = False
                             self.NewStatus = NewStatusEnum.Holding
 
                     case NewStatusEnum.Holding:
@@ -303,12 +303,12 @@ class BrightTank:
                             self.ChillWaterValve.CmdOpen = False
 
                         if (self.ChillWaterValve.OLS):
-                            self.TemperaturePV = self.TemperaturePV - abs(self.ScanDelta * 0.05) 
+                            self.TemperaturePV = self.TemperaturePV - abs(self.ScanDelta * 0.05)
 
                         if (self.ChillWaterValve.CLS):
-                            self.TemperaturePV = self.TemperaturePV + abs(self.ScanDelta * 0.001)                                               
+                            self.TemperaturePV = self.TemperaturePV + abs(self.ScanDelta * 0.001)
 
-                        if (self.HoldTime.DN) and (self.ShipToAllocated) and (self.ShipToShipCmd):                            
+                        if (self.HoldTime.DN) and (self.ShipToAllocated) and (self.ShipToShipCmd):
                             self.NewStatus = NewStatusEnum.Draining
                             self.HoldTime.Enabled = False
 
@@ -318,12 +318,12 @@ class BrightTank:
                             self.BeerPV = round(self.BeerPV - self.ScanDelta, 2)
                             self.OutletValve.CmdOpen = True
                             self.OutletPump.CmdStart = True
-                            self.BeerShipped = round(self.BeerShipped + self.ScanDelta, 2)                            
+                            self.BeerShipped = round(self.BeerShipped + self.ScanDelta, 2)
                         else:
                             self.OutletValve.CmdOpen = False
                             self.OutletPump.CmdStart = False
                             self.NewState = NewStateEnum.Done
-                            self.NewStatus = NewStatusEnum.Idle                            
+                            self.NewStatus = NewStatusEnum.Idle
 
                 # Check for a downtime condition while running once every minute
                 self.CheckDownTime.RST = False
@@ -336,11 +336,11 @@ class BrightTank:
 
                     if (dtTest > (self.PerformanceTargetPercent/100)):
                         # Downtime has occured, put system into pause and randomize downtime timer
-                        self.StopCmd = True  
+                        self.StopCmd = True
                         dtMin = randint(97,121)
                         dtMax = randint(173,600)
-                        self.DownTime.PT = randint(dtMin,dtMax) 
-                        self.DownTime.RST = False                       
+                        self.DownTime.PT = randint(dtMin,dtMax)
+                        self.DownTime.RST = False
 
                         # Assign a random dowtime for the asset
                         self.UtilizationState = choice(UtilizationStateList)
@@ -356,8 +356,8 @@ class BrightTank:
                 if (self.ChillWaterValve.OLS) and (self.TemperaturePV >= self.TemperatureSP):
                     self.TemperaturePV = self.TemperaturePV + self.ScanDelta * 0.001
 
-                # Create level from volume - the Storage Tank is assumed to be 10' in diameter and 7' tall. 
-                # This is a 4,400 GAL tank. Level will be normalized 0-100% 
+                # Create level from volume - the Storage Tank is assumed to be 10' in diameter and 7' tall.
+                # This is a 4,400 GAL tank. Level will be normalized 0-100%
                 self.LevelPV = round(self.BeerPV / 4400.0 * 100.0, 2)
 
 
@@ -366,7 +366,7 @@ class BrightTank:
         self.SettleTime.Run()
         self.DownTime.Run()
         self.CheckDownTime.Run()
-        self.OutletPump.Run()       
+        self.OutletPump.Run()
         self.InletValve.Run()
         self.OutletValve.Run()
-        self.ChillWaterValve.Run() 
+        self.ChillWaterValve.Run()

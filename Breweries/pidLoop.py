@@ -5,25 +5,25 @@
 
 #----------------------------------------------------------------------------
 # Created By  : Nick Santucci
-# Created Date: February 14 2022 
+# Created Date: February 14 2022
 # version ='0.1.0'
 # ---------------------------------------------------------------------------
 
-class pidLoop:  
+class pidLoop:
 
     """
 
     Class Overview
     ----------
 
-    A class used to represent a "PID Loop" which is a control loop mechanism employing feedback that is widely used in 
-    industrial control systems and a variety of other applications requiring continuously modulated control. 
-    A PID controller continuously calculates an error value e(t) as the difference between a desired setpoint (SP) 
-    and a measured process variable (PV) and applies a correction based on proportional, integral, and derivative terms 
-    (denoted P, I, and D respectively).           
+    A class used to represent a "PID Loop" which is a control loop mechanism employing feedback that is widely used in
+    industrial control systems and a variety of other applications requiring continuously modulated control.
+    A PID controller continuously calculates an error value e(t) as the difference between a desired setpoint (SP)
+    and a measured process variable (PV) and applies a correction based on proportional, integral, and derivative terms
+    (denoted P, I, and D respectively).
 
     Attributes
-    ----------    
+    ----------
 
     Name (Name provided by calling Class)
     Bias (Provides a steady offset to the correction value of the PID loop)
@@ -32,7 +32,7 @@ class pidLoop:
     K (Process Gain)
     Ti (Reset Time)
     MassOffset
-    PVincreaseMultiplier 
+    PVincreaseMultiplier
 
     Methods
     -------
@@ -40,7 +40,7 @@ class pidLoop:
     __init__(self, EquipmentName) - Class Constructor
     Run(self) - method to simulate equipment data
 
-    """  
+    """
 
     # Class Constructor
     def __init__(self, Name, Bias, K, MassOffset, Ti, PVincreaseMultiplier):
@@ -55,7 +55,7 @@ class pidLoop:
         self.Ti = Ti
         self.Enabled = False
 
-    # Run method to execute pidLoop functionality 
+    # Run method to execute pidLoop functionality
     def Run(self, SP, PV):
 
         self.SP = SP
@@ -85,5 +85,3 @@ class pidLoop:
             self.PV = self.PV + (self.PV * (self.Out - 0.1) / self.SP) * self.PVincreaseMultiplier
 
         return self.PV
-
-            

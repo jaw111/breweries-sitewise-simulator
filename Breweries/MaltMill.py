@@ -5,7 +5,7 @@
 
 #----------------------------------------------------------------------------
 # Created By  : Nick Santucci
-# Created Date: February 14 2022 
+# Created Date: February 14 2022
 # version ='0.1.0'
 # ---------------------------------------------------------------------------
 
@@ -19,17 +19,17 @@ from Motor import Motor
 from Timer import Timer
 from GlobalVariables import NewStateEnum, NewStatusEnum, UtilizationList, UtilizationStateList
 
-class MaltMill:    
+class MaltMill:
 
     """
-    The Malt Mill is a machine to squeezing of malt grains before the wort brewing process on 
-    the brewhouse. Before starting the brewing process it is needed to crush the grain malt 
+    The Malt Mill is a machine to squeezing of malt grains before the wort brewing process on
+    the brewhouse. Before starting the brewing process it is needed to crush the grain malt
     in the prescribed manner. It means to ensure an access the grain endosperm without damaging
     their husks.
 
-    Operational sequence steps: 
-    
-    1) The MaltMill begins in the Ready/Idle state 
+    Operational sequence steps:
+
+    1) The MaltMill begins in the Ready/Idle state
     2) Automatically transitions to Running where Roasted Barley is pushed into the MashTun by the MaltMill MaltAuger motor
     3) Once the malt fill (lbs) setpoint is reached it moves to Running/Done, then back go Ready/Idle (Step 1) for next production run
 
@@ -37,7 +37,7 @@ class MaltMill:
 
     In parallel to the above Operational sequence steps, every one minute the MaltMill checks to see if it should go into a "Downtime" state.
     By default the MaltMill is set to have 98% uptime (self.PerformanceTargetPercent).  If it is determined (randomly) that
-    the MaltMill should go to a Downtime state, the machine is set to Running/Paused and a Utilization State is set to a random value of 
+    the MaltMill should go to a Downtime state, the machine is set to Running/Paused and a Utilization State is set to a random value of
     ('Demand','Downtime','Maintenance') and Utilization is set to a random value of ('No Orders','Starved Supply','Running (Slow)',
     'Unknown','EStop','Sticking Valve','Pump Overload','Faulty Wiring','Tripped Breaker','Planned Maintenance',
     'Unplanned Maintenance') for a randomly selected amount of time (97-600 seconds).  Once the downtime is complete all states go
@@ -48,10 +48,10 @@ class MaltMill:
     ----------
 
     Upstream - Dependency on the MashTun (technically integrated and work in unison), see Mash.py class for more information
-    Downstream - Works in Tandem with the MashTun asset, please see Mash.py file for details    
+    Downstream - Works in Tandem with the MashTun asset, please see Mash.py file for details
 
     Attributes (exposed to OPC UA Client)
-    ----------    
+    ----------
 
     MaltPV (Malt Process Variable Actual)
     MaltSP (Malt Setpoint Desired)
@@ -63,7 +63,7 @@ class MaltMill:
 
     Methods
     -------
-    
+
     __init__(self, EquipmentName) - Class Constructor
     Run(self) - method to simulate equipment data
 
@@ -71,7 +71,7 @@ class MaltMill:
 
     # Class Constructor
     def __init__(self, EquipmentName):
-        self.EquipmentName = EquipmentName 
+        self.EquipmentName = EquipmentName
         self.NewState = NewStateEnum.Ready
         self.NewStatus = NewStatusEnum.Idle
         self.UtilizationState = "Runtime"
@@ -81,7 +81,7 @@ class MaltMill:
         self.ScanTime = 100
         self.PerformanceTargetPercent = 98
         self.MaltMillComplete = False
-        self.StartCmd = False        
+        self.StartCmd = False
         self.StopCmd = False
         self.RestartCmd = False
         self.EStopCmd = False
@@ -101,8 +101,8 @@ class MaltMill:
         # Set timer for 1 minute to check for random downtime event
         self.CheckDownTime.PT = 60
 
-    # Run method to simulate equipment data 
-    def Run(self):        
+    # Run method to simulate equipment data
+    def Run(self):
 
         if self.StartCmd:
                 self.StartCmd = False
@@ -124,12 +124,12 @@ class MaltMill:
             if self.NewState == NewStateEnum.Paused:
                 self.NewState = NewStateEnum.Aborted
 
-        if self.ResetCmd:    
-            self.ResetCmd = False    
+        if self.ResetCmd:
+            self.ResetCmd = False
             if self.NewState == NewStateEnum.Done or self.NewState == NewStateEnum.Aborted:
                 self.NewState = NewStateEnum.Ready
 
-        if self.EStopCmd:        
+        if self.EStopCmd:
             if self.NewState == NewStateEnum.Running:
                 self.NewState = NewStateEnum.Paused
 
@@ -170,7 +170,7 @@ class MaltMill:
                 self.CheckDownTime.Enabled = False
 
                 self.DownTime.Enabled = True
-                if (self.DownTime.DN):                    
+                if (self.DownTime.DN):
                     self.RestartCmd = True
                     self.UtilizationState = "Runtime"
                     self.Utilization = "Running (Normal)"
@@ -197,12 +197,12 @@ class MaltMill:
                     self.CheckDownTime.RST = True
 
                     if (dtTest > (self.PerformanceTargetPercent/100)):
-                        # Downtime has occured, put system into pause and randomize downtime timer                        
-                        self.StopCmd = True  
+                        # Downtime has occured, put system into pause and randomize downtime timer
+                        self.StopCmd = True
                         dtMin = randint(97,121)
                         dtMax = randint(173,600)
-                        self.DownTime.PT = randint(dtMin,dtMax) 
-                        self.DownTime.RST = False                       
+                        self.DownTime.PT = randint(dtMin,dtMax)
+                        self.DownTime.RST = False
 
                         # Assign a random dowtime for the asset
                         self.UtilizationState = choice(UtilizationStateList)

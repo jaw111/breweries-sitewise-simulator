@@ -5,7 +5,7 @@
 
 #----------------------------------------------------------------------------
 # Created By  : Nick Santucci
-# Created Date: February 14 2022 
+# Created Date: February 14 2022
 # version ='0.1.0'
 # ---------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 UtilizationList = ['No Orders','Starved Supply','Running (Slow)','Unknown','EStop','Sticking Valve','Pump Overload','Faulty Wiring','Tripped Breaker','Planned Maintenance','Unplanned Maintenance']
 
-UtilizationStateList = ['Demand','Downtime','Maintenance'] 
+UtilizationStateList = ['Demand','Downtime','Maintenance']
 
 ScanRates = [.97,.98,.99,.100]
 
@@ -33,7 +33,7 @@ class NewStatusEnum:
     Holding1: str = "Holding1"
     Holding2: str = "Holding2"
     Draining: str = "Draining"
-    WaitingForOperator: str = "WaitingForOperator " 
+    WaitingForOperator: str = "WaitingForOperator "
 
 @dataclass
 class NewStateEnum:

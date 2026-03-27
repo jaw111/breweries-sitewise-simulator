@@ -5,7 +5,7 @@
 
 #----------------------------------------------------------------------------
 # Created By  : Nick Santucci
-# Created Date: February 14 2022 
+# Created Date: February 14 2022
 # version ='0.1.0'
 # ---------------------------------------------------------------------------
 
@@ -21,50 +21,50 @@ from Valve import Valve
 from pidLoop import pidLoop
 from GlobalVariables import NewStateEnum, NewStatusEnum, UtilizationList, UtilizationStateList
 
-class BoilKettle:   
+class BoilKettle:
 
     """
-    The Boil Kettle is a brewhouse vessel where wort is boiled and reduced for approximately 60 to 90 minutes. During boil, 
-    initial hop additions are introduced into the brewing process. After boil is complete the wort is whirlpooled to separate 
+    The Boil Kettle is a brewhouse vessel where wort is boiled and reduced for approximately 60 to 90 minutes. During boil,
+    initial hop additions are introduced into the brewing process. After boil is complete the wort is whirlpooled to separate
     unwanted solids from the desired liquid.
 
-    Operational sequence steps: 
-    
-    1) The Boil Kettle begins in the Ready/Idle state 
+    Operational sequence steps:
+
+    1) The Boil Kettle begins in the Ready/Idle state
     2) When MashTun is in the Draining status and MashTun OutletPump.AuxContact is true, The BoilKettle will transition to Running/Filling
     3) Once the MashTun Draining is completed, the BoilKettle moves to Running/RampingUp where steam is used to heat up the temperature
     4) Once the Temperature PV (actual temperature) reaches Temperature Setpoint it moves to Running/Holding to soak
-    5) Once the HoldTime Setpoint is reached it moves to Running/RampUp2 where steam is used to heat up the temperature further 
+    5) Once the HoldTime Setpoint is reached it moves to Running/RampUp2 where steam is used to heat up the temperature further
     6) Once the HoldTime Setpoint is reached it moves to Running/Draining if the Fermenter is in Ready/Idle, else stays in Holding
-    7) After Running/Draining is completed, it moves to Done/Draining, then back to Ready/Idle (Step 1) for next production run   
+    7) After Running/Draining is completed, it moves to Done/Draining, then back to Ready/Idle (Step 1) for next production run
 
     Equipment Utilization (Availability component of OEE):
 
     In parallel to the above Operational sequence steps, every one minute the BoilKettle checks to see if it should go into a "Downtime" state.
     By default the BoilKettle is set to have 98% uptime (self.PerformanceTargetPercent).  If it is determined (randomly) that
-    the BoilKettle should go to a Downtime state, the machine is set to Running/Paused and a Utilization State is set to a random value of 
+    the BoilKettle should go to a Downtime state, the machine is set to Running/Paused and a Utilization State is set to a random value of
     ('Demand','Downtime','Maintenance') and Utilization is set to a random value of ('No Orders','Starved Supply','Running (Slow)',
     'Unknown','EStop','Sticking Valve','Pump Overload','Faulty Wiring','Tripped Breaker','Planned Maintenance',
     'Unplanned Maintenance') for a randomly selected amount of time (97-600 seconds).  Once the downtime is complete all states go
-    back to runtime. 
+    back to runtime.
 
     Dependencies (Asset material transfers & data handshaking)
     ----------
 
     Upstream - The BoilKettle (this asset) needs to be in Ready/Idle for MashTun to Drain
-    Downstream - The Fermenter must be in Ready/Idle for the BoilKettle to be able to Drain    
+    Downstream - The Fermenter must be in Ready/Idle for the BoilKettle to be able to Drain
 
     Attributes (exposed to OPC UA Client)
-    ----------    
+    ----------
 
     Cons_Hops_FromLot (Consumed Hops inventory lot/location attained from)
-    Cons_Hops_Item (Consumed Hops Item/Material)         
+    Cons_Hops_Item (Consumed Hops Item/Material)
     Cons_Wort_FromLot (Consumed Wort inventory lot/location attained from MashTun)
     Cons_Wort_Item (Consumed Hops Item/Material from MashTun)
     HoldTime.PT (Holdtime Timer Preset Time)
     HoldTime.ET (Holdtime Timer Elapsed Time)
     LevelPV (Level Process Variable in %)
-    MaterialID (Current item being produced - Passed from MashTun->BoilKettle during Draining->Filling)                
+    MaterialID (Current item being produced - Passed from MashTun->BoilKettle during Draining->Filling)
     NewState (Machine State - "Done", "Ready", "Running", "Paused" (Downtime), "Aborted")
     NewStatus (Machine Status - "Idle", "Filling", "Ramping Up", "Holding", "Draining")
     OutletPump.AuxContact (The OutletPump motors auxiliary contact state - True/False)
@@ -92,20 +92,20 @@ class BoilKettle:
     WortPV (Inflow from MashTun Wort Process Variable Actual)
     HopsPV (Hops Process Variable Actual)
     HopsSP (Hops Setpoint Desired)
-    BrewedWortPV (Brewed Wort Process Variable Actual outflow to Fermenter)     
+    BrewedWortPV (Brewed Wort Process Variable Actual outflow to Fermenter)
 
     Methods
     -------
-    
+
     __init__(self, EquipmentName) - Class Constructor
     Run(self) - method to simulate equipment data
 
-    """ 
+    """
 
     # Class Constructor
     def __init__(self, EquipmentName):
 
-        self.EquipmentName = EquipmentName 
+        self.EquipmentName = EquipmentName
         self.StartCmd = False
         self.StopCmd = False
         self.RestartCmd = False
@@ -115,8 +115,8 @@ class BoilKettle:
         self.ShipComplete = False
         self.AllowMashWort = False
         self.MashShipComplete = False
-        self.FermenterReady = False     
-        self.ReadyOS = False   
+        self.FermenterReady = False
+        self.ReadyOS = False
         self.BrewedWortPV = 0.0
         self.HopsPV = 0.0
         self.HopsSP = 0.0
@@ -144,7 +144,7 @@ class BoilKettle:
         self.Cons_Hops_Item = ""
         self.ProductionID = ""
         self.Next_ProductionID = ""
-        self.DownStream_ProductionID = ""        
+        self.DownStream_ProductionID = ""
         self.MaterialID = ""
         self.Next_ItemID = ""
         self.DownStream_ItemID = ""
@@ -155,9 +155,9 @@ class BoilKettle:
         self.HopsNames = ['Admiral','Brewers Gold','Calypso','Orion', 'Southern Brewer', 'Viking']
 
         # Create contained assets
-        self.HoldTime = Timer("HoldTime")        
+        self.HoldTime = Timer("HoldTime")
         self.HopsAuger = Motor("HopsAuger")
-        self.InletValve = Valve("InletValve") 
+        self.InletValve = Valve("InletValve")
         self.OutletPump = Motor("OutletPump")
         self.OutletValve = Valve("OutletValve")
         self.SteamValve = Valve("SteamValve")
@@ -171,8 +171,8 @@ class BoilKettle:
         # Set timer for 1 minute to check for random downtime event
         self.CheckDownTime.PT = 60
 
-    # Run method to simulate equipment data 
-    def Run(self):                   
+    # Run method to simulate equipment data
+    def Run(self):
 
         if self.StartCmd:
             self.StartCmd = False
@@ -188,8 +188,8 @@ class BoilKettle:
                 uniquePre = choice(self.HopsNames)
 
                 now = datetime.datetime.now()
-                self.Prod_BrewedWort_ToLot = "{0}{1}{2}".format("BW-", self.EquipmentName[-3], now.strftime("%m%d%S%M")) 
-                self.Cons_Hops_Item = "{0}{1}".format(uniquePre," Hops")                   
+                self.Prod_BrewedWort_ToLot = "{0}{1}{2}".format("BW-", self.EquipmentName[-3], now.strftime("%m%d%S%M"))
+                self.Cons_Hops_Item = "{0}{1}".format(uniquePre," Hops")
                 self.Cons_Hops_FromLot = "{0}{1}{2}".format("HL-A", self.EquipmentName[-3], now.strftime("%d%M%S%m"))
 
                 self.NewState = NewStateEnum.Running
@@ -204,12 +204,12 @@ class BoilKettle:
             if self.NewState == NewStateEnum.Running:
                 self.NewState = NewStateEnum.Paused
 
-        if self.EStopCmd:        
+        if self.EStopCmd:
             if self.NewState == NewStateEnum.Running:
                 self.NewState = NewStateEnum.Paused
 
-        if self.ResetCmd:    
-            self.ResetCmd = False    
+        if self.ResetCmd:
+            self.ResetCmd = False
             if self.NewState == NewStateEnum.Done or self.NewState == NewStateEnum.Aborted:
                 self.NewState = NewStateEnum.Ready
 
@@ -220,7 +220,7 @@ class BoilKettle:
 
         match self.NewState:
 
-            case NewStateEnum.Aborted:                
+            case NewStateEnum.Aborted:
                 self.BrewedWortPV = 0.0
                 self.HoldTime.Enabled = False
                 self.HopsPV = 0.0
@@ -235,7 +235,7 @@ class BoilKettle:
                 self.WortPV = 0.0
                 self.WortSP = 5000.0
 
-            case NewStateEnum.Done:                
+            case NewStateEnum.Done:
                 self.SteamValve.CmdOpen = False
                 self.OutletPump.CmdStart = False
                 self.OutletValve.CmdOpen = False
@@ -248,12 +248,12 @@ class BoilKettle:
                 if (self.SettleTime.DN):
 
                     self.SettleTime.Enabled = False
-                    self.SettleTime.RST = True                                        
+                    self.SettleTime.RST = True
 
                     self.NewState = NewStateEnum.Ready
                     self.NewStatus = NewStatusEnum.Idle
 
-            case NewStateEnum.Paused:                 
+            case NewStateEnum.Paused:
                 self.HopsAuger.CmdStart = False
                 self.InletValve.CmdOpen = False
                 self.OutletPump.CmdStart = False
@@ -280,11 +280,11 @@ class BoilKettle:
                     # Reset inital values for next production run
                     self.ReadyOS = True
                     self.SettleTime.RST = False
-                    self.SettleTime.PT = randint(10,25) 
+                    self.SettleTime.PT = randint(10,25)
                     self.TemperatureSP = 100
                     self.TemperaturePV = self.TemperatureSafe
                     self.ScanDelta = 0.81
-                    self.HoldTime.RST = True                    
+                    self.HoldTime.RST = True
                     self.BrewedWortPV = 0.0
                     self.HopsSP = 75.0
                     self.HopsPV = 0.0
@@ -305,11 +305,11 @@ class BoilKettle:
                     self.OutletValve.CmdOpen = False
                     self.ShipComplete = False
                     self.AllowMashWort = True
-                    self.SteamValve.CmdOpen = False                    
+                    self.SteamValve.CmdOpen = False
                     self.WortPV = 0.0
                     self.WortSP = 5000.0
 
-                    self.HoldTime.PT = randint(6,11) * 60                                       
+                    self.HoldTime.PT = randint(6,11) * 60
 
             case NewStateEnum.Running:
 
@@ -330,7 +330,7 @@ class BoilKettle:
                             self.InletValve.CmdOpen = True
                             self.TemperaturePV = 150.0
 
-                        # Setup Hops levels to dynamically fill based on amount of wort in tank 
+                        # Setup Hops levels to dynamically fill based on amount of wort in tank
                         self.HopsSP = round(self.WortPV * 0.02, 2)
                         if (self.MashShipComplete):
                             if (self.HopsPV <= self.HopsSP):
@@ -365,11 +365,11 @@ class BoilKettle:
                             self.SteamValve.CmdOpen = True
 
                         if (self.TemperaturePV >= self.TemperatureSP):
-                            self.SteamValve.CmdOpen = False                        
+                            self.SteamValve.CmdOpen = False
 
                         if (self.HoldTime.DN and self.FermenterReady):
                             self.HoldTime.Enabled = False
-                            self.NewStatus = NewStatusEnum.Draining 
+                            self.NewStatus = NewStatusEnum.Draining
 
                     case NewStatusEnum.Draining:
                         # Drain the Wort
@@ -399,11 +399,11 @@ class BoilKettle:
 
                     if (dtTest > (self.PerformanceTargetPercent/100)):
                         # Downtime has occured, put system into pause and randomize downtime timer
-                        self.StopCmd = True  
+                        self.StopCmd = True
                         dtMin = randint(97,121)
                         dtMax = randint(173,600)
-                        self.DownTime.PT = randint(dtMin,dtMax) 
-                        self.DownTime.RST = False                       
+                        self.DownTime.PT = randint(dtMin,dtMax)
+                        self.DownTime.RST = False
 
                         # Assign a random dowtime for the asset
                         self.UtilizationState = choice(UtilizationStateList)
@@ -414,7 +414,7 @@ class BoilKettle:
                             case "Downtime":
                                 self.Utilization = UtilizationList[randint(3,8)]
                             case "Maintenance":
-                                self.Utilization = UtilizationList[randint(9,10)]                
+                                self.Utilization = UtilizationList[randint(9,10)]
 
         # Emulate a PI Loop
         if (self.NewState != NewStateEnum.Paused):
@@ -431,8 +431,8 @@ class BoilKettle:
         if (self.TemperatureControl.Enabled):
             self.TemperaturePV = round(self.TemperatureControl.Run(self.TemperatureSP, self.TemperaturePV), 2)
 
-        # Create level from volume - the Brew Kettle is assumed to be 12' in diameter and 7' tall. 
-        # This is a 5,900 GAL tank. Level will be normalized 0-100% 
+        # Create level from volume - the Brew Kettle is assumed to be 12' in diameter and 7' tall.
+        # This is a 5,900 GAL tank. Level will be normalized 0-100%
         self.LevelPV = round(self.WortPV / 5900.0 * 100.0, 2)
 
         self.TemperatureMassOffset = 1.0 - (self.WortPV / 5900.0)
@@ -442,8 +442,8 @@ class BoilKettle:
         self.CheckDownTime.Run()
         self.SettleTime.Run()
         self.DownTime.Run()
-        self.HopsAuger.Run()         
+        self.HopsAuger.Run()
         self.InletValve.Run()
-        self.OutletValve.Run()  
-        self.SteamValve.Run()  
+        self.OutletValve.Run()
+        self.SteamValve.Run()
         self.OutletPump.Run()
