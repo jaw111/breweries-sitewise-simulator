@@ -1,110 +1,105 @@
 %% Plant‑Level Architecture + Production Flow Diagram
 flowchart LR
-    %% Top Level
-    E[Breweries Enterprise]
-    E --> P[IrvinePlant Site]
+    %% Top level
+    subgraph E["Breweries Enterprise"]
+        subgraph P["IrvinePlant Site"]
 
-    %% ROASTING AREA
-    subgraph Roasting["Roasting Area"]
-        direction TB
-        R100[Roaster100]
-        R200[Roaster200]
+            %% ROASTING AREA
+            subgraph Roasting["Roasting Area"]
+                direction TB
+                R100[Roaster100]
+                R200[Roaster200]
+            end
+
+            %% MASHING AREA
+            subgraph Mashing["Mashing Area"]
+                direction TB
+                MM100[MaltMill100]
+                MT100[MashTun100]
+                MM200[MaltMill200]
+                MT200[MashTun200]
+            end
+
+            %% BREWING AREA
+            subgraph Brewing["Brewing Area"]
+                direction TB
+                BK100[BoilKettle100]
+                BK200[BoilKettle200]
+            end
+
+            %% FERMENTATION AREA
+            subgraph Fermentation["Fermentation Area"]
+                direction TB
+                F100[Fermenter100]
+                F200[Fermenter200]
+            end
+
+            %% BRIGHT TANK AREA
+            subgraph Bright["Bright Tank Storage"]
+                direction TB
+                BT301[BrightTank301]
+                BT302[BrightTank302]
+                BT303[BrightTank303]
+                BT304[BrightTank304]
+                BT305[BrightTank305]
+            end
+
+            %% BOTTLING AREA
+            subgraph Bottling["Bottling / Packaging"]
+                direction TB
+                BL401[BottleLine401]
+                BL402[BottleLine402]
+                BL403[BottleLine403]
+            end
+
+            %% PRODUCTION FLOW (TRAIN 100)
+            R100 -->|Roasted Barley| MT100
+            MT100 -->|Requests Malt SP| MM100
+            MM100 -->|Milled Malt| MT100
+
+            MT100 -->|Wort| BK100
+            BK100 -->|Brewed Wort| F100
+
+            F100 -->|Green Beer| BT301
+            F100 --> BT302
+            F100 --> BT303
+            F100 --> BT304
+            F100 --> BT305
+
+            %% PRODUCTION FLOW (TRAIN 200)
+            R200 -->|Roasted Barley| MT200
+            MT200 -->|Requests Malt SP| MM200
+            MM200 -->|Milled Malt| MT200
+
+            MT200 -->|Wort| BK200
+            BK200 -->|Brewed Wort| F200
+
+            F200 -->|Green Beer| BT301
+            F200 --> BT302
+            F200 --> BT303
+            F200 --> BT304
+            F200 --> BT305
+
+            %% BRIGHT TANK --> BOTTLE LINES
+            BT301 -->|Beer| BL401
+            BT301 --> BL402
+            BT301 --> BL403
+
+            BT302 -->|Beer| BL401
+            BT302 --> BL402
+            BT302 --> BL403
+
+            BT303 --> BL401
+            BT303 --> BL402
+            BT303 --> BL403
+
+            BT304 --> BL401
+            BT304 --> BL402
+            BT304 --> BL403
+
+            BT305 --> BL401
+            BT305 --> BL402
+            BT305 --> BL403
+
+        end
     end
-
-    %% MASHING AREA
-    subgraph Mashing["Mashing Area"]
-        direction TB
-        MM100[MaltMill100]
-        MT100[MashTun100]
-        MM200[MaltMill200]
-        MT200[MashTun200]
-    end
-
-    %% BREWING AREA
-    subgraph Brewing["Brewing Area"]
-        direction TB
-        BK100[BoilKettle100]
-        BK200[BoilKettle200]
-    end
-
-    %% FERMENTATION AREA
-    subgraph Fermentation["Fermentation Area"]
-        direction TB
-        F100[Fermenter100]
-        F200[Fermenter200]
-    end
-
-    %% BRIGHT TANK AREA
-    subgraph Bright["Bright Tank Storage"]
-        direction TB
-        BT301[BrightTank301]
-        BT302[BrightTank302]
-        BT303[BrightTank303]
-        BT304[BrightTank304]
-        BT305[BrightTank305]
-    end
-
-    %% BOTTLING AREA
-    subgraph Bottling["Bottling / Packaging"]
-        direction TB
-        BL401[BottleLine401]
-        BL402[BottleLine402]
-        BL403[BottleLine403]
-    end
-
-    %% PRODUCTION FLOW (TRAIN 100)
-    R100 -->|Roasted Barley| MT100
-    MT100 -->|Requests Malt SP| MM100
-    MM100 -->|Milled Malt| MT100
-
-    MT100 -->|Wort| BK100
-    BK100 -->|Brewed Wort| F100
-
-    F100 -->|Green Beer| BT301
-    F100 --> BT302
-    F100 --> BT303
-    F100 --> BT304
-    F100 --> BT305
-
-    %% PRODUCTION FLOW (TRAIN 200)
-    R200 -->|Roasted Barley| MT200
-    MT200 -->|Requests Malt SP| MM200
-    MM200 -->|Milled Malt| MT200
-
-    MT200 -->|Wort| BK200
-    BK200 -->|Brewed Wort| F200
-
-    F200 -->|Green Beer| BT301
-    F200 --> BT302
-    F200 --> BT303
-    F200 --> BT304
-    F200 --> BT305
-
-    %% BRIGHT TANK --> BOTTLE LINES
-    BT301 -->|Beer| BL401
-    BT301 --> BL402
-    BT301 --> BL403
-
-    BT302 -->|Beer| BL401
-    BT302 --> BL402
-    BT302 --> BL403
-
-    BT303 --> BL401
-    BT303 --> BL402
-    BT303 --> BL403
-
-    BT304 --> BL401
-    BT304 --> BL402
-    BT304 --> BL403
-
-    BT305 --> BL401
-    BT305 --> BL402
-    BT305 --> BL403
-
-    %% SITE LINKS
-    P --> Roasting
-    P --> Mashing
-    P --> Brewing
-    P --> Fermentation
-    P --> Bright
-    P --> Bottling
