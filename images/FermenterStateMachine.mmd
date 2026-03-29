@@ -1,0 +1,47 @@
+%% Fermenter State Machine
+stateDiagram-v2
+    [*] --> Ready
+
+    state "Ready<br/>(State=Ready, Status=Idle)" as Ready
+    state "Running: Filling" as Filling
+    state "Running: Holding" as Holding
+    state "Running: Draining" as Draining
+    state "Paused<br/>(State=Paused)" as Paused
+    state "Aborted<br/>(State=Aborted)" as Aborted
+    state "Done<br/>(State=Done)" as Done
+
+    Ready --> Filling: StartCmd<br/>(Trigger from BoilKettle)
+    Filling --> Holding: BrewedWortPV >= BrewedWortSP<br/>HoldTime.PT initialized
+    Holding --> Draining: HoldTime.DN AND ShipToAllocated AND ShipToShipCmd
+    Draining --> Done: BrewedWortPV <= 0<br/>ShipToShipComplete=True
+
+    Done --> Ready: SettleTime.DN<br/>Auto reset
+
+    %% Downtime / Pause transitions
+    Running --> Paused: StopCmd or RandomDowntimeTrigger
+    Paused --> Running: RestartCmd
+    Paused --> Aborted: AbortCmd
+    Aborted --> Ready: ResetCmd
+
+    %% Running superstate
+    state Running {
+        [*] --> Filling
+        Filling --> Holding
+        Holding --> Draining
+    }
+
+    %% External triggers / conditions
+    note right of Filling
+        InletValve opens
+        Wort + Yeast filling
+    end note
+
+    note right of Holding
+        Temperature control active
+        ChillWaterValve toggles
+    end note
+
+    note right of Draining
+        OutletValve & OutletPump start
+        Beer flows to BrightTank
+    end note
