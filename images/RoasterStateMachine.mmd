@@ -1,0 +1,43 @@
+%% Roaster State Machine
+stateDiagram-v2
+    [*] --> Ready
+
+    %% ----------------------
+    %%   TOP‑LEVEL STATES
+    %% ----------------------
+    state Ready {
+        [*] --> Idle
+        Idle --> Settling : SettleTime.DN
+        Settling --> Filling : StartCmd
+    }
+
+    Ready --> Running : StartCmd
+    Ready --> Ready : ResetCmd
+
+    Paused --> Aborted : AbortCmd
+    Paused --> Running : RestartCmd
+    Paused --> Paused : StopCmd / EStopCmd
+    
+    Aborted --> Ready : ResetCmd
+    Done --> Ready : auto-return
+
+    %% ----------------------
+    %%    RUNNING SUBSTATES
+    %% ----------------------
+    state Running {
+        [*] --> Filling
+
+        Filling --> RampingUp : MaltPV >= MaltSP
+        RampingUp --> Holding : TemperaturePV >= TemperatureSP
+        Holding --> RampingDown : HoldTime.DN
+        RampingDown --> Done : TemperaturePV <= TemperatureSafe
+    }
+
+    %% Downtime transitions
+    Running --> Paused : StopCmd (Downtime)
+    Running --> Paused : EStopCmd
+    Paused --> Running : RestartCmd
+
+    %% Final transition
+    Running --> Done : After RampingDown
+    Done --> Ready
