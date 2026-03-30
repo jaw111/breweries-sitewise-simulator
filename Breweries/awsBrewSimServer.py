@@ -1896,7 +1896,7 @@ if __name__ == "__main__":
             R200_UtilizationState.set_value(Roaster200.UtilizationState)
             R200_Utilization.set_value(Roaster200.Utilization)
             R200_MaltAuger_PV.set_value(Roaster200.MaltAuger.PV)
-            R200_MaltAuger_AuxContact.set_value(Roaster100.MaltAuger.AuxContact)
+            R200_MaltAuger_AuxContact.set_value(Roaster200.MaltAuger.AuxContact)
             R200_Scrap.set_value(Roaster200.Scrap)
 
             # MaltMill100
