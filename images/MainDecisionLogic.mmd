@@ -1,0 +1,115 @@
+%% Brewery Simulator - Main Decision Logic
+flowchart TD
+
+%% =========================
+%% FERMENTER → BRIGHT TANKS
+%% =========================
+
+subgraph FERM_ALLOC["Fermenter → Bright Tank Allocation"]
+    F_START(("Fermenter Running\nAND HoldTime.DN\nAND not ShipToAllocated"))
+    F_START --> F_ALLOCATE_CMD["Set ShipToAutoAllocateCmd = True\nStart FerShipToTimer"]
+
+    F_ALLOCATE_CMD --> F_CHECK_BT301{"BT301 Ready & Idle?"}
+    F_ALLOCATE_CMD --> F_CHECK_BT302{"BT302 Ready & Idle?"}
+    F_ALLOCATE_CMD --> F_CHECK_BT303{"BT303 Ready & Idle?"}
+    F_ALLOCATE_CMD --> F_CHECK_BT304{"BT304 Ready & Idle?"}
+    F_ALLOCATE_CMD --> F_CHECK_BT305{"BT305 Ready & Idle?"}
+
+    F_CHECK_BT301 -->|Yes| F_ALLOC301["Allocate BT301\nShipToAllocated=True\nShipToTank=301"]
+    F_CHECK_BT302 -->|Yes| F_ALLOC302["Allocate BT302\nShipToAllocated=True\nShipToTank=302"]
+    F_CHECK_BT303 -->|Yes| F_ALLOC303["Allocate BT303\nShipToAllocated=True\nShipToTank=303"]
+    F_CHECK_BT304 -->|Yes| F_ALLOC304["Allocate BT304\nShipToAllocated=True\nShipToTank=304"]
+    F_CHECK_BT305 -->|Yes| F_ALLOC305["Allocate BT305\nShipToAllocated=True\nShipToTank=305"]
+
+    F_CHECK_BT301 -->|No| F_CHECK_BT302
+    F_CHECK_BT302 -->|No| F_CHECK_BT303
+    F_CHECK_BT303 -->|No| F_CHECK_BT304
+    F_CHECK_BT304 -->|No| F_CHECK_BT305
+
+    %% Shipping Logic
+    F_SHIP_READY(("ShipToAllocated AND Timer.DN"))
+    F_SHIP_READY --> F_SHIP_CMD["Set ShipToShipCmd = True"]
+
+    F_SHIP_CMD --> F_SHIP_ROUTE{"ShipToTank?"}
+
+    F_SHIP_ROUTE -->|301| F_SHIP301["Send GreenBeer → BT301\nStartCmd=True"]
+    F_SHIP_ROUTE -->|302| F_SHIP302["Send GreenBeer → BT302\nStartCmd=True"]
+    F_SHIP_ROUTE -->|303| F_SHIP303["Send GreenBeer → BT303\nStartCmd=True"]
+    F_SHIP_ROUTE -->|304| F_SHIP304["Send GreenBeer → BT304\nStartCmd=True"]
+    F_SHIP_ROUTE -->|305| F_SHIP305["Send GreenBeer → BT305\nStartCmd=True"]
+
+    %% Completion
+    F_SHIP301 --> F_DONE1(("If FermenterShipComplete → StopCmd"))
+    F_SHIP302 --> F_DONE2
+    F_SHIP303 --> F_DONE3
+    F_SHIP304 --> F_DONE4
+    F_SHIP305 --> F_DONE5
+end
+
+%% =========================
+%% BRIGHT TANKS → BOTTLING LINE
+%% =========================
+
+subgraph BT_ALLOC["Bright Tank → Bottling Line Allocation"]
+    BT_READY(("BrightTank Running\nAND HoldTime.DN\nAND not ShipToAllocated"))
+
+    BT_READY --> BT_AUTOALLOC["Set ShipToAutoAllocateCmd = True"]
+
+    BT_AUTOALLOC --> BT_CHECK_BL401{"BL401 Ready & Idle?"}
+    BT_AUTOALLOC --> BT_CHECK_BL402{"BL402 Ready & Idle?"}
+    BT_AUTOALLOC --> BT_CHECK_BL403{"BL403 Ready & Idle?"}
+
+    BT_CHECK_BL401 -->|Yes| BT_ALLOC401["Allocate BL401\nShipToTank=401\nAllocatedFrom=BT"]
+    BT_CHECK_BL402 -->|Yes| BT_ALLOC402["Allocate BL402\nShipToTank=402\nAllocatedFrom=BT"]
+    BT_CHECK_BL403 -->|Yes| BT_ALLOC403["Allocate BL403\nShipToTank=403\nAllocatedFrom=BT"]
+
+    BT_CHECK_BL401 -->|No| BT_CHECK_BL402
+    BT_CHECK_BL402 -->|No| BT_CHECK_BL403
+
+    %% Shipping Logic
+    BT_SHIP_READY(("BrightTank Running\nAND ShipToAllocated"))
+    BT_SHIP_READY --> BT_SHIP_CMD["ShipToShipCmd = True"]
+
+    BT_SHIP_CMD --> BT_ROUTE{"ShipToTank?"}
+
+    BT_ROUTE -->|401| BT_SHIP401["Send Beer → BL401"]
+    BT_ROUTE -->|402| BT_SHIP402["Send Beer → BL402"]
+    BT_ROUTE -->|403| BT_SHIP403["Send Beer → BL403"]
+
+    BT_SHIP401 --> BT_DONE1(("If BT Done/Aborted → stop shipping"))
+    BT_SHIP402 --> BT_DONE2
+    BT_SHIP403 --> BT_DONE3
+end
+
+%% =========================
+%% BREW TRAIN 100
+%% =========================
+
+subgraph BREW100["Brew Train 100\nRoaster100 → Mash100 → Boil100 → Ferm100"]
+    R100_FILLING{"Roaster100 Status = Filling?"}
+    R100_FILLING -->|Yes| R100_PUSH["Append roasted barley to Mash100.ConsList"]
+
+    M100_RUNNING{"Mash100 State = Running?"}
+    M100_RUNNING --> M100_TO_BOIL["Send ProductionID & Wort Item → Boil100\nIf draining: send Wort and lot"]
+
+    BK100_RUNNING{"Boil100 State = Running?"}
+    BK100_RUNNING --> BK100_TO_FER["Send BrewedWort metadata → Ferm100\nIf draining: send BrewedWort"]
+
+    F100_READY{"Fermenter100 Ready?"}
+    BK100_RUNNING -->|Filling & Mash done| BK100_MASHDONE["MashShipComplete=True"]
+end
+
+%% =========================
+%% BREW TRAIN 200
+%% =========================
+
+subgraph BREW200["Brew Train 200\nRoaster200 → Mash200 → Boil200 → Ferm200"]
+    R200_FILLING{"Roaster200 Status = Filling?"}
+    R200_FILLING -->|Yes| R200_PUSH["Append roasted barley to Mash200.ConsList"]
+
+    M200_RUNNING{"Mash200 State = Running?"}
+    M200_RUNNING --> M200_TO_BOIL["Send ProductionID & Wort Item → Boil200\nIf draining: send Wort and lot"]
+
+    BK200_RUNNING{"Boil200 State = Running?"}
+    BK200_RUNNING --> BK200_TO_FER["Send BrewedWort metadata → Ferm200\nIf draining: send BrewedWort"]
+end
